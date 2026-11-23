@@ -277,12 +277,7 @@ if "selected_photo_source" not in st.session_state:
     st.session_state.selected_photo_source = ""
 
 # FIX: Thread-safe camera frame buffer
-if "camera_frame_buffer" not in st.session_state:
 
-    st.session_state.camera_frame_buffer = {
-        "frame": None,
-        "lock": threading.Lock()
-    }
 
 
 # =========================================================
