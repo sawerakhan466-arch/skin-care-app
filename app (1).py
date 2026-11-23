@@ -775,15 +775,26 @@ with analysis_tab:
         )
 
         camera_context = webrtc_streamer(
-            key="kairae_camera",
-            mode=WebRtcMode.SENDRECV,
-            video_frame_callback=camera_callback,
-            media_stream_constraints={
-                "video": True,
-                "audio": False
-            },
-            async_processing=True
-        )
+    key="kairae_camera",
+    mode=WebRtcMode.SENDRECV,
+    video_frame_callback=camera_callback,
+    media_stream_constraints={
+        "video": {
+            "facingMode": "user"
+        },
+        "audio": False
+    },
+    rtc_configuration={
+        "iceServers": [
+            {
+                "urls": [
+                    "stun:stun.l.google.com:19302"
+                ]
+            }
+        ]
+    },
+    async_processing=True
+)
 
 
         if camera_context.state.playing:
