@@ -1,4 +1,3 @@
-
 import base64
 import io
 import json
@@ -280,9 +279,12 @@ if "selected_photo_bytes" not in st.session_state:
 if "selected_photo_source" not in st.session_state:
     st.session_state.selected_photo_source = ""
 
+# FIX: Thread-safe camera frame buffer
 if "camera_frame_buffer" not in st.session_state:
+
     st.session_state.camera_frame_buffer = {
-        "frame": None
+        "frame": None,
+        "lock": threading.Lock()
     }
 
 
@@ -591,32 +593,50 @@ def display_products(products):
 
 
 # =========================================================
-# 10. CAMERA FUNCTION
+# 10. CAMERA FUNCTION - FIXED
 # =========================================================
 
-def camera_callback(frame):
+def camera_callback_factory(frame_buffer):
 
-    image = frame.to_ndarray(format="rgb24")
+    def camera_callback(frame):
 
-    pil_image = Image.fromarray(image)
+        try:
 
-    buffer = io.BytesIO()
+            # Convert WebRTC frame into RGB
+            image = frame.to_ndarray(format="rgb24")
 
-    pil_image.save(
-        buffer,
-        format="JPEG",
-        quality=85
-    )
+            # Convert to PIL image
+            pil_image = Image.fromarray(image)
 
-    # Store the latest camera frame
-    st.session_state.camera_frame_buffer["frame"] = (
-        buffer.getvalue()
-    )
+            # Convert frame to JPEG bytes
+            buffer = io.BytesIO()
 
-    return av.VideoFrame.from_ndarray(
-        image,
-        format="rgb24"
-    )
+            pil_image.save(
+                buffer,
+                format="JPEG",
+                quality=85
+            )
+
+            image_bytes = buffer.getvalue()
+
+            # Thread-safe storage of the latest frame
+            with frame_buffer["lock"]:
+
+                frame_buffer["frame"] = image_bytes
+
+            # Return frame to WebRTC for live display
+            return av.VideoFrame.from_ndarray(
+                image,
+                format="rgb24"
+            )
+
+        except Exception as error:
+
+            print("Camera frame error:", error)
+
+            return frame
+
+    return camera_callback
 
 
 # =========================================================
@@ -762,7 +782,7 @@ with analysis_tab:
 
 
     # -----------------------------------------------------
-    # CAMERA MODE
+    # CAMERA MODE - FIXED
     # -----------------------------------------------------
 
     if photo_method == "📷 Use Camera":
@@ -771,30 +791,42 @@ with analysis_tab:
 
         st.caption(
             "Press Start to turn on your camera. "
-            "Press Stop to turn it off."
+            "Wait for the live video, then capture your photo."
         )
 
+        # Get session-specific frame buffer
+        frame_buffer = st.session_state.camera_frame_buffer
+
+        # Start WebRTC camera
         camera_context = webrtc_streamer(
-    key="kairae_camera",
-    mode=WebRtcMode.SENDRECV,
-    video_frame_callback=camera_callback,
-    media_stream_constraints={
-        "video": {
-            "facingMode": "user"
-        },
-        "audio": False
-    },
-    rtc_configuration={
-        "iceServers": [
-            {
-                "urls": [
-                    "stun:stun.l.google.com:19302"
+
+            key="kairae_camera",
+
+            mode=WebRtcMode.SENDRECV,
+
+            video_frame_callback=camera_callback_factory(
+                frame_buffer
+            ),
+
+            media_stream_constraints={
+                "video": {
+                    "facingMode": "user"
+                },
+                "audio": False
+            },
+
+            rtc_configuration={
+                "iceServers": [
+                    {
+                        "urls": [
+                            "stun:stun.l.google.com:19302"
+                        ]
+                    }
                 ]
-            }
-        ]
-    },
-    async_processing=True
-)
+            },
+
+            async_processing=True
+        )
 
 
         if camera_context.state.playing:
@@ -806,14 +838,17 @@ with analysis_tab:
             st.info("Camera is OFF 🔴")
 
 
+        # CAPTURE PHOTO BUTTON
         if st.button(
             "📸 Capture Photo",
             use_container_width=True
         ):
 
-            latest_frame = (
-                st.session_state.camera_frame_buffer["frame"]
-            )
+            # Read frame safely
+            with frame_buffer["lock"]:
+
+                latest_frame = frame_buffer.get("frame")
+
 
             if latest_frame is not None:
 
@@ -831,11 +866,13 @@ with analysis_tab:
 
                 st.rerun()
 
+
             else:
 
                 st.warning(
-                    "Please turn on your camera first "
-                    "and wait for the video to appear."
+                    "Camera frame is not available yet. "
+                    "Please start your camera, wait for the live "
+                    "video, and then try again."
                 )
 
 
@@ -869,7 +906,6 @@ with analysis_tab:
 
                 image_bytes = uploaded_photo.getvalue()
 
-                # Verify that the file is a valid image
                 image = Image.open(
                     io.BytesIO(image_bytes)
                 )
@@ -888,7 +924,7 @@ with analysis_tab:
                     "Image uploaded successfully! 💗"
                 )
 
-            except Exception as error:
+            except Exception:
 
                 st.error(
                     "This image could not be opened. "
@@ -1109,7 +1145,6 @@ IMPORTANT RULES:
 
                 except Exception:
 
-                    # If AI doesn't return valid JSON
                     st.session_state.skin_analysis_data = None
 
                     st.session_state.skin_analysis = result
@@ -1161,7 +1196,6 @@ IMPORTANT RULES:
 
         if isinstance(analysis_data, dict):
 
-
             possible_skin_type = (
                 analysis_data.get(
                     "possible_skin_type",
@@ -1178,7 +1212,6 @@ IMPORTANT RULES:
 
 
             st.markdown("### 💗 Possible Skin Type")
-
 
             st.info(
                 f"**AI Suggestion:** {possible_skin_type}"
