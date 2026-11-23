@@ -1,11 +1,6 @@
 import base64
-import io
-import json
-
 import streamlit as st
 from groq import Groq
-from PIL import Image
-
 
 # =========================================================
 # 1. PAGE CONFIGURATION
@@ -17,29 +12,16 @@ st.set_page_config(
     layout="wide"
 )
 
-
 # =========================================================
 # 2. CUSTOM CSS
 # =========================================================
 
 st.markdown("""
 <style>
-
-.stApp {
-    background-color: #FCE4EC;
-}
-
-[data-testid="stHeader"] {
-    background-color: #FCE4EC;
-}
-
-[data-testid="stSidebar"] {
-    background-color: #F8BBD0;
-}
-
-h1, h2, h3 {
-    color: #AD1457 !important;
-}
+.stApp { background-color: #FCE4EC; }
+[data-testid="stHeader"] { background-color: #FCE4EC; }
+[data-testid="stSidebar"] { background-color: #F8BBD0; }
+h1, h2, h3 { color: #AD1457 !important; }
 
 div[data-testid="stChatMessage"] {
     background-color: #FFF5F8;
@@ -59,13 +41,8 @@ div[data-testid="stChatMessage"] {
     color: white;
 }
 
-.stChatInput {
-    border-radius: 15px;
-}
-
-footer {
-    visibility: hidden;
-}
+.stChatInput { border-radius: 15px; }
+footer { visibility: hidden; }
 
 div[data-testid="stMetric"] {
     background: #FFF5F8;
@@ -73,10 +50,8 @@ div[data-testid="stMetric"] {
     padding: 12px;
     border-radius: 12px;
 }
-
 </style>
 """, unsafe_allow_html=True)
-
 
 # =========================================================
 # 3. HEADER
@@ -84,7 +59,6 @@ div[data-testid="stMetric"] {
 
 st.html("""
 <div style="text-align:center; padding: 8px 0 2px;">
-
     <h1 style="font-family:serif; font-size:50px; color:#AD1457;">
         ✨ Kairaé ✨
     </h1>
@@ -100,12 +74,10 @@ st.html("""
     <p style="color:#880E4F;">
         Understand your skin. Discover your glow. Shop with confidence. 💗
     </p>
-
 </div>
 """)
 
 st.divider()
-
 
 # =========================================================
 # 4. PRODUCT DATABASE
@@ -238,9 +210,7 @@ PRODUCTS = [
         "image": "https://dermalondon.com.pk/cdn/shop/files/1_dbf13df1-bd7f-433b-aa78-f3e775b1ad60.jpg?v=1777375582",
         "url": "https://dermalondon.com.pk/collections/acne-pimples"
     }
-
 ]
-
 
 # =========================================================
 # 5. SESSION STATE
@@ -261,44 +231,27 @@ if "applied_profile" not in st.session_state:
 if "skin_analysis" not in st.session_state:
     st.session_state.skin_analysis = ""
 
-if "skin_analysis_data" not in st.session_state:
-    st.session_state.skin_analysis_data = None
-
 if "chat_recommended_names" not in st.session_state:
     st.session_state.chat_recommended_names = []
 
 if "last_analysis_signature" not in st.session_state:
     st.session_state.last_analysis_signature = ""
 
-if "selected_photo_bytes" not in st.session_state:
-    st.session_state.selected_photo_bytes = None
-
-if "selected_photo_source" not in st.session_state:
-    st.session_state.selected_photo_source = ""
-
-# FIX: Thread-safe camera frame buffer
-
-
-
 # =========================================================
 # 6. GROQ CLIENT
 # =========================================================
 
 try:
-
     client = Groq(
         api_key=st.secrets["GROQ_API_KEY"]
     )
 
 except Exception:
-
     st.error(
         "Groq API key is missing. Add GROQ_API_KEY to "
         ".streamlit/secrets.toml before running the app."
     )
-
     st.stop()
-
 
 # =========================================================
 # 7. SIDEBAR - USER PROFILE
@@ -407,17 +360,11 @@ with st.sidebar:
 
         st.rerun()
 
-
     skin_type = st.session_state.applied_profile["skin_type"]
-
     skin_tone = st.session_state.applied_profile["skin_tone"]
-
     concerns = st.session_state.applied_profile["concerns"]
-
     budget = st.session_state.applied_profile["budget"]
-
     makeup_interest = st.session_state.applied_profile["makeup_interest"]
-
 
     st.divider()
 
@@ -427,21 +374,11 @@ with st.sidebar:
     ):
 
         st.session_state.messages = []
-
         st.session_state.chat_recommended_names = []
-
         st.session_state.skin_analysis = ""
-
-        st.session_state.skin_analysis_data = None
-
         st.session_state.last_analysis_signature = ""
 
-        st.session_state.selected_photo_bytes = None
-
-        st.session_state.selected_photo_source = ""
-
         st.rerun()
-
 
     st.markdown("---")
 
@@ -449,7 +386,6 @@ with st.sidebar:
         "<div style='text-align:center;'><b>Kairaé Beauty AI 💗</b></div>",
         unsafe_allow_html=True
     )
-
 
 # =========================================================
 # 8. PRODUCT MATCHING
@@ -460,10 +396,14 @@ def recommend_products(
     selected_concerns,
     selected_budget
 ):
+    """
+    Return skin-type matches.
+    Budget affects ranking, not exclusion.
+    """
 
     matches = [
-        p for p in PRODUCTS
-        if skin_type in p["skin_types"]
+        product for product in PRODUCTS
+        if skin_type in product["skin_types"]
     ]
 
     def score(product):
@@ -505,11 +445,9 @@ def recommend_products(
     )
 
 
-# =========================================================
-# 9. PRODUCT DISPLAY FUNCTIONS
-# =========================================================
-
 def get_products_by_names(names):
+
+    """Keep displayed cards synchronized with exact database names."""
 
     ordered = []
 
@@ -532,8 +470,9 @@ def display_products(products):
     if not products:
 
         st.info(
-            "Our current product database has no exact match "
-            "for this skin type yet."
+            "Our current verified product list has no exact match "
+            "for this skin type yet. We are not going to suggest "
+            "an unrelated product."
         )
 
         return
@@ -583,56 +522,8 @@ def display_products(products):
                     use_container_width=True
                 )
 
-
 # =========================================================
-# 10. CAMERA FUNCTION - FIXED
-# =========================================================
-
-def camera_callback_factory(frame_buffer):
-
-    def camera_callback(frame):
-
-        try:
-
-            # Convert WebRTC frame into RGB
-            image = frame.to_ndarray(format="rgb24")
-
-            # Convert to PIL image
-            pil_image = Image.fromarray(image)
-
-            # Convert frame to JPEG bytes
-            buffer = io.BytesIO()
-
-            pil_image.save(
-                buffer,
-                format="JPEG",
-                quality=85
-            )
-
-            image_bytes = buffer.getvalue()
-
-            # Thread-safe storage of the latest frame
-            with frame_buffer["lock"]:
-
-                frame_buffer["frame"] = image_bytes
-
-            # Return frame to WebRTC for live display
-            return av.VideoFrame.from_ndarray(
-                image,
-                format="rgb24"
-            )
-
-        except Exception as error:
-
-            print("Camera frame error:", error)
-
-            return frame
-
-    return camera_callback
-
-
-# =========================================================
-# 11. MAIN TABS
+# 9. MAIN TABS
 # =========================================================
 
 home_tab, analysis_tab, assistant_tab = st.tabs(
@@ -643,9 +534,8 @@ home_tab, analysis_tab, assistant_tab = st.tabs(
     ]
 )
 
-
 # =========================================================
-# 12. HOME TAB
+# HOME TAB
 # =========================================================
 
 with home_tab:
@@ -676,11 +566,12 @@ with home_tab:
 
         st.divider()
 
-
     st.markdown("## 🌷 Recommended Products")
 
     st.caption(
-        f"Matches for {skin_type} skin, your concerns and your selected budget."
+        f"Matches for {skin_type} skin, your concerns and your "
+        "selected budget. Budget is used to prioritize products, "
+        "not to hide skin-type matches."
     )
 
     profile_products = recommend_products(
@@ -691,15 +582,14 @@ with home_tab:
 
     display_products(profile_products)
 
-
     if skin_type in ["Dry", "Sensitive"]:
 
         st.info(
             "Our current database has limited products for this skin type. "
             "At present, Simple Refreshing Facial Wash is the only listed "
-            "product tagged for both Dry and Sensitive skin."
+            "product tagged for both Dry and Sensitive skin. More verified "
+            "products should be added before expanding these recommendations."
         )
-
 
     st.divider()
 
@@ -712,22 +602,16 @@ with home_tab:
         st.markdown("### ☀️ Morning")
 
         st.write("1. Gentle cleanser")
-
         st.write("2. Moisturizer suitable for your skin")
-
         st.write("3. Broad-spectrum SPF 30+ sunscreen")
-
 
     with night_col:
 
         st.markdown("### 🌙 Night")
 
         st.write("1. Gentle cleanser")
-
         st.write("2. One suitable treatment, if needed")
-
         st.write("3. Moisturizer")
-
 
     st.caption(
         "This is general skincare education, not a personalized "
@@ -735,9 +619,8 @@ with home_tab:
         "and patch test first."
     )
 
-
 # =========================================================
-# 13. AI SKIN ANALYSIS TAB
+# 10. AI SKIN ANALYSIS
 # =========================================================
 
 with analysis_tab:
@@ -745,430 +628,210 @@ with analysis_tab:
     st.markdown("## 📸 AI Skin Analysis")
 
     st.write(
-        "Capture a photo using your camera or upload a picture. "
-        "Kairaé will automatically review visible skin features "
-        "and provide preliminary skincare insights."
+        "Take a clear photo or upload a selfie in natural, "
+        "even lighting. The AI will describe visible features "
+        "and provide general skincare guidance."
     )
-
 
     st.warning(
-        "Privacy notice: Your photo is sent to Groq's AI model "
+        "Privacy & safety: Your photo is sent to Groq's vision model "
         "for analysis. Do not upload a photo if you are uncomfortable "
-        "sharing it with this service. This is not a medical diagnosis."
+        "sharing it with this service. The analysis is not a diagnosis "
+        "and cannot confirm a skin condition."
     )
-
-
-    # -----------------------------------------------------
-    # SELECT PHOTO METHOD
-    # -----------------------------------------------------
 
     photo_method = st.radio(
-        "Choose your photo method",
+        "Choose how to add your photo",
         [
-            "📷 Use Camera",
-            "🖼️ Upload Photo"
+            "Take a photo with camera",
+            "Upload a photo"
         ],
-        horizontal=True,
-        key="photo_method"
+        horizontal=True
     )
 
+    photo = None
 
     # -----------------------------------------------------
-    # CAMERA MODE - FIXED
+    # CAMERA MODE - NATIVE STREAMLIT
     # -----------------------------------------------------
 
-    if photo_method == "📷 Use Camera":
+    if photo_method == "Take a photo with camera":
 
         st.markdown("### 📷 Your Camera")
 
         st.caption(
-            "Press Start to turn on your camera. "
-            "Wait for the live video, then capture your photo."
+            "Allow camera access in your browser. "
+            "Take a clear photo in natural lighting."
         )
 
-        # Get session-specific frame buffer
-        frame_buffer = st.session_state.camera_frame_buffer
-
-        # Start WebRTC camera
-        camera_context = webrtc_streamer(
-
-            key="kairae_camera",
-
-            mode=WebRtcMode.SENDRECV,
-
-            video_frame_callback=camera_callback_factory(
-                frame_buffer
+        photo = st.camera_input(
+            "Take a front-facing photo",
+            help=(
+                "Use natural light, remove heavy filters, "
+                "and keep your face clearly visible."
             ),
-
-            media_stream_constraints={
-                "video": {
-                    "facingMode": "user"
-                },
-                "audio": False
-            },
-
-            rtc_configuration={
-                "iceServers": [
-                    {
-                        "urls": [
-                            "stun:stun.l.google.com:19302"
-                        ]
-                    }
-                ]
-            },
-
-            async_processing=True
+            key="kairae_camera_input"
         )
-
-
-        if camera_context.state.playing:
-
-            st.success("Camera is ON 🟢")
-
-        else:
-
-            st.info("Camera is OFF 🔴")
-
-
-        # CAPTURE PHOTO BUTTON
-        if st.button(
-            "📸 Capture Photo",
-            use_container_width=True
-        ):
-
-            # Read frame safely
-            with frame_buffer["lock"]:
-
-                latest_frame = frame_buffer.get("frame")
-
-
-            if latest_frame is not None:
-
-                st.session_state.selected_photo_bytes = (
-                    latest_frame
-                )
-
-                st.session_state.selected_photo_source = (
-                    "Camera"
-                )
-
-                st.success(
-                    "Photo captured successfully! 💗"
-                )
-
-                st.rerun()
-
-
-            else:
-
-                st.warning(
-                    "Camera frame is not available yet. "
-                    "Please start your camera, wait for the live "
-                    "video, and then try again."
-                )
-
 
     # -----------------------------------------------------
     # UPLOAD MODE
     # -----------------------------------------------------
 
-    elif photo_method == "🖼️ Upload Photo":
+    else:
 
-        st.markdown("### 🖼️ Upload Your Photo")
-
-        uploaded_photo = st.file_uploader(
-            "Choose a clear face photo",
-            type=[
-                "jpg",
-                "jpeg",
-                "png",
-                "webp"
-            ],
-            key="kairae_uploaded_photo",
+        photo = st.file_uploader(
+            "Upload a clear face photo",
+            type=["jpg", "jpeg", "png"],
             help=(
-                "Upload a clear, unfiltered picture "
-                "with natural lighting."
-            )
+                "Use a clear, unfiltered photo "
+                "with even lighting."
+            ),
+            key="kairae_upload_input"
         )
-
-
-        if uploaded_photo is not None:
-
-            try:
-
-                image_bytes = uploaded_photo.getvalue()
-
-                image = Image.open(
-                    io.BytesIO(image_bytes)
-                )
-
-                image.verify()
-
-                st.session_state.selected_photo_bytes = (
-                    image_bytes
-                )
-
-                st.session_state.selected_photo_source = (
-                    "Upload"
-                )
-
-                st.success(
-                    "Image uploaded successfully! 💗"
-                )
-
-            except Exception:
-
-                st.error(
-                    "This image could not be opened. "
-                    "Please upload a valid JPG, PNG or WEBP image."
-                )
-
 
     # -----------------------------------------------------
     # PHOTO PREVIEW
     # -----------------------------------------------------
 
-    if st.session_state.selected_photo_bytes is not None:
+    if photo is not None:
 
-        st.divider()
+        st.markdown("### 🖼️ Photo Preview")
 
-        st.markdown("## 💗 Photo Preview")
-
-        try:
-
-            preview_image = Image.open(
-                io.BytesIO(
-                    st.session_state.selected_photo_bytes
-                )
-            )
-
-            st.image(
-                preview_image,
-                caption="Your selected photo",
-                width=350
-            )
-
-        except Exception:
-
-            st.error(
-                "The selected image could not be displayed."
-            )
-
-
-        st.success(
-            "Your photo is ready. Confirm it below to start AI analysis."
+        st.image(
+            photo,
+            caption="Your selected photo",
+            width=320
         )
 
+        st.success("Photo selected successfully! 💗")
 
         # -------------------------------------------------
-        # CONFIRM PHOTO & ANALYZE
+        # ANALYZE PHOTO BUTTON
         # -------------------------------------------------
 
         if st.button(
-            "✨ Confirm Photo & Analyze My Skin",
+            "✨ Analyze My Skin",
             use_container_width=True,
-            type="primary"
+            key="analyze_skin_button"
         ):
 
             try:
 
-                image_bytes = (
-                    st.session_state.selected_photo_bytes
-                )
-
-                image = Image.open(
-                    io.BytesIO(image_bytes)
-                ).convert("RGB")
-
-
-                # Resize image to reduce API payload
-                image.thumbnail(
-                    (1024, 1024)
-                )
-
-
-                # Convert image to JPEG
-                image_buffer = io.BytesIO()
-
-                image.save(
-                    image_buffer,
-                    format="JPEG",
-                    quality=85
-                )
-
-                processed_image_bytes = (
-                    image_buffer.getvalue()
-                )
-
+                image_bytes = photo.getvalue()
 
                 encoded_image = base64.b64encode(
-                    processed_image_bytes
+                    image_bytes
                 ).decode("utf-8")
 
-
-                data_url = (
-                    "data:image/jpeg;base64,"
-                    + encoded_image
+                mime_type = (
+                    getattr(photo, "type", None)
+                    or "image/jpeg"
                 )
 
+                data_url = (
+                    f"data:{mime_type};base64,{encoded_image}"
+                )
 
                 analysis_prompt = """
-You are Kairaé, an AI skincare education assistant.
+You are an AI skincare education assistant.
 
-Analyze the provided face photo carefully.
+Review this face photo only for visible, non-diagnostic observations.
 
-You must NOT diagnose any medical condition.
-You must NOT claim dermatologist-grade accuracy.
-You must NOT infer age, ethnicity, identity, health status,
-or any sensitive personal attribute.
+Do not identify the person.
+Do not infer age, ethnicity, health status, or any sensitive attribute.
 
-Respond ONLY with valid JSON using this exact structure:
+Explain cautiously:
 
-{
-    "possible_skin_type": "Oily / Dry / Combination / Normal / Sensitive / Cannot determine",
-    "confidence": "Low / Moderate",
-    "visible_observations": [
-        "Observation 1",
-        "Observation 2"
-    ],
-    "possible_concerns": [
-        "Concern 1",
-        "Concern 2"
-    ],
-    "limitations": [
-        "Limitation 1",
-        "Limitation 2"
-    ],
-    "skincare_guidance": [
-        "Guidance 1",
-        "Guidance 2",
-        "Guidance 3"
-    ],
-    "when_to_see_dermatologist": "Advice",
-    "summary": "A short friendly summary."
-}
+1. Visible features that may be present, such as visible blemishes,
+   shine, redness, dark spots, or texture, only if clearly visible.
 
-IMPORTANT RULES:
+2. What cannot be reliably assessed from this photo.
 
-1. Possible skin type is only a tentative estimate.
-2. A photograph cannot reliably determine skin type.
-3. Choose Cannot determine if the photo does not provide
-   enough evidence.
-4. Do not confidently classify skin type based only on
-   lighting, shine, makeup or image quality.
-5. Describe only features that are actually visible.
-6. Visible shine does not automatically mean oily skin.
-7. Visible dryness does not automatically confirm dry skin.
-8. Possible concerns must be non-diagnostic observations.
-9. Do not diagnose acne, rosacea, eczema, infection,
-   pigmentation disorders or other medical conditions.
-10. Give gentle, general skincare guidance.
-11. Mention that skin type should also be confirmed through
-    the user's own experience.
-12. Use kind, clear and understandable language.
-13. If image quality is poor, mention it.
-14. Do not invent observations.
-15. Do not include Markdown code fences around the JSON.
+3. Gentle general skincare steps that may be helpful.
+
+4. Ingredients or skincare categories the user could discuss
+   with a qualified dermatologist or pharmacist.
+
+5. When professional medical advice is appropriate.
+
+Do not diagnose acne, rosacea, eczema, infection, pigmentation
+disorders, or any other medical condition.
+
+Do not assign a skin type from the photo.
+
+Do not claim dermatologist-grade accuracy.
+
+If image quality, lighting, makeup, filters, or angle limit
+assessment, clearly explain these limitations.
+
+Use clear, kind language and headings.
+
+Avoid certainty.
 """
 
-
                 with st.spinner(
-                    "Kairaé is analyzing your photo... 🌸"
+                    "Kairaé is reviewing the visible features... 🌸"
                 ):
 
-                    vision_response = (
-                        client.chat.completions.create(
-                            model="qwen/qwen3.8-27b",
-                            messages=[
-                                {
-                                    "role": "user",
-                                    "content": [
-                                        {
-                                            "type": "text",
-                                            "text": analysis_prompt
-                                        },
-                                        {
-                                            "type": "image_url",
-                                            "image_url": {
-                                                "url": data_url
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            temperature=0.2,
-                            max_completion_tokens=1500
-                        )
-                    )
+                    vision_response = client.chat.completions.create(
 
+                        model="qwen/qwen3.8-27b",
+
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": analysis_prompt
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": data_url
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+
+                        temperature=0.3,
+
+                        max_completion_tokens=1200
+                    )
 
                 result = (
                     vision_response
                     .choices[0]
-                    .message.content
+                    .message
+                    .content
                 )
 
-
-                # Parse AI JSON response
-                try:
-
-                    cleaned_result = result.strip()
-
-                    if cleaned_result.startswith("```"):
-
-                        cleaned_result = (
-                            cleaned_result
-                            .replace("```json", "")
-                            .replace("```", "")
-                            .strip()
-                        )
-
-                    analysis_data = json.loads(
-                        cleaned_result
-                    )
-
-                    st.session_state.skin_analysis_data = (
-                        analysis_data
-                    )
-
-                    st.session_state.skin_analysis = (
-                        analysis_data
-                    )
-
-                except Exception:
-
-                    st.session_state.skin_analysis_data = None
-
-                    st.session_state.skin_analysis = result
-
+                st.session_state.skin_analysis = result
 
                 st.session_state.last_analysis_signature = (
-                    str(hash(processed_image_bytes))
+                    str(hash(image_bytes))
                 )
 
                 st.success(
-                    "Your skin analysis is ready! 💗"
+                    "Your skin insights are ready! 💗"
                 )
 
                 st.rerun()
 
-
             except Exception as error:
 
                 st.error(
-                    "Image analysis could not be completed. "
-                    "Please check your internet connection, "
-                    "Groq API key and vision model availability."
+                    "The image analysis could not be completed. "
+                    "Check that your Groq account has access to the "
+                    "vision model and try again."
                 )
 
-                st.code(
-                    str(error)
-                )
+                st.code(str(error))
 
-
-    # =====================================================
-    # 14. DISPLAY ANALYSIS RESULTS
-    # =====================================================
+    # -----------------------------------------------------
+    # DISPLAY ANALYSIS
+    # -----------------------------------------------------
 
     if st.session_state.skin_analysis:
 
@@ -1176,239 +839,31 @@ IMPORTANT RULES:
 
         st.markdown("## 🌸 Your Skin Insights")
 
-
-        analysis_data = (
-            st.session_state.skin_analysis_data
+        st.markdown(
+            st.session_state.skin_analysis
         )
-
-
-        # -------------------------------------------------
-        # STRUCTURED ANALYSIS
-        # -------------------------------------------------
-
-        if isinstance(analysis_data, dict):
-
-            possible_skin_type = (
-                analysis_data.get(
-                    "possible_skin_type",
-                    "Cannot determine"
-                )
-            )
-
-            confidence = (
-                analysis_data.get(
-                    "confidence",
-                    "Low"
-                )
-            )
-
-
-            st.markdown("### 💗 Possible Skin Type")
-
-            st.info(
-                f"**AI Suggestion:** {possible_skin_type}"
-            )
-
-
-            st.caption(
-                f"Confidence level: {confidence}. "
-                "This is only a tentative photo-based estimate."
-            )
-
-
-            st.markdown("### 🔍 Visible Observations")
-
-            for observation in analysis_data.get(
-                "visible_observations",
-                []
-            ):
-
-                st.write(
-                    f"• {observation}"
-                )
-
-
-            st.markdown("### 🌷 Possible Concerns")
-
-            possible_concerns = (
-                analysis_data.get(
-                    "possible_concerns",
-                    []
-                )
-            )
-
-            if possible_concerns:
-
-                for concern in possible_concerns:
-
-                    st.write(
-                        f"• {concern}"
-                    )
-
-            else:
-
-                st.write(
-                    "No clear concerns could be identified."
-                )
-
-
-            st.markdown("### ⚠️ Limitations")
-
-            for limitation in analysis_data.get(
-                "limitations",
-                []
-            ):
-
-                st.write(
-                    f"• {limitation}"
-                )
-
-
-            st.markdown("### 🧴 General Skincare Guidance")
-
-            for guidance in analysis_data.get(
-                "skincare_guidance",
-                []
-            ):
-
-                st.write(
-                    f"• {guidance}"
-                )
-
-
-            st.markdown(
-                "### 👩‍⚕️ When to Consult a Dermatologist"
-            )
-
-            st.write(
-                analysis_data.get(
-                    "when_to_see_dermatologist",
-                    "Consult a dermatologist for persistent or concerning skin issues."
-                )
-            )
-
-
-            st.markdown("### 💬 Summary")
-
-            st.write(
-                analysis_data.get(
-                    "summary",
-                    ""
-                )
-            )
-
-
-            # -------------------------------------------------
-            # APPLY AI SUGGESTED SKIN TYPE
-            # -------------------------------------------------
-
-            st.divider()
-
-            st.markdown(
-                "## 💗 Personalize Your Skin Profile"
-            )
-
-            st.write(
-                "Would you like to use the AI's tentative "
-                "skin type suggestion for your product matches?"
-            )
-
-
-            valid_skin_types = [
-                "Oily",
-                "Dry",
-                "Combination",
-                "Normal",
-                "Sensitive",
-                "Acne-prone"
-            ]
-
-
-            if possible_skin_type in valid_skin_types:
-
-                suggested_profile_type = (
-                    possible_skin_type
-                )
-
-            else:
-
-                suggested_profile_type = (
-                    st.session_state.applied_profile["skin_type"]
-                )
-
-
-            selected_analysis_skin_type = st.selectbox(
-                "Confirm or change your skin type",
-                valid_skin_types,
-                index=valid_skin_types.index(
-                    suggested_profile_type
-                ),
-                key="analysis_confirm_skin_type"
-            )
-
-
-            if st.button(
-                "💗 Confirm Skin Type & Update My Products",
-                use_container_width=True
-            ):
-
-                st.session_state.applied_profile[
-                    "skin_type"
-                ] = selected_analysis_skin_type
-
-
-                st.session_state.chat_recommended_names = []
-
-
-                st.success(
-                    f"Your profile is now updated to "
-                    f"{selected_analysis_skin_type} skin! 💗"
-                )
-
-
-                st.info(
-                    "Your product recommendations will now "
-                    "match your updated skin profile."
-                )
-
-
-                st.rerun()
-
-
-        # -------------------------------------------------
-        # FALLBACK IF JSON PARSING FAILED
-        # -------------------------------------------------
-
-        else:
-
-            st.markdown(
-                st.session_state.skin_analysis
-            )
-
-            st.warning(
-                "The AI response could not be formatted "
-                "automatically. You can still read the analysis "
-                "above, but the skin profile suggestion "
-                "could not be extracted."
-            )
-
-
-        # -------------------------------------------------
-        # SAFETY MESSAGE
-        # -------------------------------------------------
 
         st.info(
-            "This analysis is based on one photograph and is "
+            "This is an AI-generated observation of one photo, "
             "not a clinical assessment. Lighting, camera quality, "
-            "makeup, filters and angle can affect the results. "
-            "A photo cannot reliably confirm skin type or diagnose "
-            "skin conditions. For persistent, painful, rapidly "
-            "changing or concerning symptoms, consult a qualified dermatologist."
+            "makeup and filters can affect the result. For persistent, "
+            "painful, rapidly changing or worrying skin concerns, "
+            "consult a qualified dermatologist."
         )
 
+        st.markdown(
+            "### 💗 Continue to your product matches"
+        )
+
+        st.write(
+            "Your photo analysis does not automatically determine "
+            "your skin type. Use the Skin Profile in the sidebar "
+            "to confirm your skin type and concerns; your product "
+            "matches will update accordingly."
+        )
 
 # =========================================================
-# 15. SKIN ASSISTANT TAB
+# 11. SKIN ASSISTANT
 # =========================================================
 
 with assistant_tab:
@@ -1422,59 +877,38 @@ with assistant_tab:
         "product comparisons and affordable options in Pakistan."
     )
 
-
     if st.session_state.skin_analysis:
 
         with st.expander(
             "View your latest AI skin insights"
         ):
 
-            if isinstance(
-                st.session_state.skin_analysis,
-                dict
-            ):
+            st.markdown(
+                st.session_state.skin_analysis
+            )
 
-                st.json(
-                    st.session_state.skin_analysis
-                )
-
-            else:
-
-                st.markdown(
-                    st.session_state.skin_analysis
-                )
-
-
-    # =====================================================
+    # -----------------------------------------------------
     # SYSTEM PROMPT
-    # =====================================================
+    # -----------------------------------------------------
 
     SYSTEM_PROMPT = f"""
-
 You are Kairaé, a friendly AI skincare, beauty and cosmetics assistant.
 
 USER PROFILE:
 
 Skin type: {skin_type}
-
 Skin tone: {skin_tone}
-
 Skin concerns: {concerns}
-
 Budget: {budget}
-
 Interested in makeup: {makeup_interest}
 
-
-LATEST PHOTO-BASED SKIN INSIGHTS:
+LATEST PHOTO-BASED SKIN INSIGHTS (non-diagnostic):
 
 {st.session_state.skin_analysis or "No photo analysis has been completed."}
-
 
 PRODUCT DATABASE:
 
 {PRODUCTS}
-
 
 RULES:
 
@@ -1488,20 +922,21 @@ RULES:
 
 5. Never invent a product, price, ingredient, claim, or shopping URL.
 
-6. Prices are approximate and can change.
+6. Prices are approximate and can change; ask users to confirm with the seller.
 
-7. When recommending products, mention exact database product names.
+7. When recommending products, mention exact database product names so the
+   app can display the same products in the Recommended Products section.
 
 8. For product recommendations, use a table with:
    Product Name | Brand | Approximate Price (PKR) | Why it may suit the user.
 
-9. Only recommend products whose skin_types list includes
-   the user's selected skin type.
+9. Only recommend products whose skin_types list includes the user's selected
+   skin type. If the database has no suitable item, say so honestly.
 
-10. If the database has no suitable item, say so honestly.
+10. Do not recommend unrelated products merely to fill a list.
 
-11. For Dry and Sensitive skin, the current database has
-    limited coverage.
+11. For Dry and Sensitive skin, the current database has limited coverage.
+    Simple Refreshing Facial Wash is the only current entry tagged for both.
 
 12. Do not say a cheap product is low quality only because of its price.
 
@@ -1509,56 +944,43 @@ RULES:
 
 14. Do not diagnose medical conditions from a photo or text.
 
-15. Photo insights are uncertain visible observations,
-    not clinical findings.
+15. Photo insights are uncertain visible observations, not clinical findings.
 
-16. Do not claim dermatologist-grade accuracy.
+16. Do not claim dermatologist-grade accuracy or that a photo proves a skin type.
 
-17. For severe, painful, persistent, rapidly changing or
-    worrying symptoms, recommend a qualified dermatologist.
+17. For severe, painful, persistent, rapidly changing or worrying symptoms,
+    recommend a qualified dermatologist.
 
-18. Encourage patch testing and introducing one new product
-    at a time.
+18. Encourage patch testing and introducing one new product at a time.
 
-19. For routines, separate morning and night steps and
-    include sunscreen in the morning routine.
+19. For routines, separate morning and night steps and include sunscreen
+    in the morning routine.
 
 20. Avoid recommending many active ingredients at once.
 
-21. Skin tone may help with makeup shade suggestions,
-    not skincare diagnosis.
+21. Skin tone may help with makeup shade suggestions, not skincare diagnosis.
 
-22. If asked about a product not in the database,
-    say it is not currently listed.
+22. If asked about a product not in the database, say it is not currently listed.
 
 23. Keep the response focused on skincare, makeup and beauty.
-
-24. If a skin analysis has been performed, use it as context
-    but remember that it is only a tentative photo-based observation.
-
 """
 
-
-    # =====================================================
+    # -----------------------------------------------------
     # CHAT HISTORY
-    # =====================================================
+    # -----------------------------------------------------
 
     for message in st.session_state.messages:
 
-        with st.chat_message(
-            message["role"]
-        ):
+        with st.chat_message(message["role"]):
 
             st.markdown(
                 message["content"]
             )
 
-
     user_input = st.chat_input(
         "Ask Kairaé about skincare, products, or makeup... 💗",
         key="beauty_chat_input"
     )
-
 
     if user_input:
 
@@ -1568,7 +990,6 @@ RULES:
                 "content": user_input
             }
         )
-
 
         try:
 
@@ -1585,24 +1006,18 @@ RULES:
                             "role": "system",
                             "content": SYSTEM_PROMPT
                         },
-
                         *st.session_state.messages
                     ],
 
                     temperature=0.5,
 
                     max_tokens=1200
-
                 )
 
-
             answer = (
-                response
-                .choices[0]
-                .message.content
-                or "Sorry, I could not prepare an answer."
+                response.choices[0].message.content
+                or "Sorry, I could not prepare an answer. Please try again."
             )
-
 
             st.session_state.messages.append(
                 {
@@ -1611,19 +1026,14 @@ RULES:
                 }
             )
 
+            # Detect exact product names in the latest answer.
 
-            # Detect exact product names
             mentioned_names = [
-
                 product["name"]
-
                 for product in PRODUCTS
-
                 if product["name"].casefold()
                 in answer.casefold()
-
             ]
-
 
             if mentioned_names:
 
@@ -1631,9 +1041,7 @@ RULES:
                     mentioned_names
                 )
 
-
             st.rerun()
-
 
         except Exception as error:
 
@@ -1641,9 +1049,8 @@ RULES:
                 f"Something went wrong: {error}"
             )
 
-
 # =========================================================
-# 16. FOOTER
+# 12. FOOTER
 # =========================================================
 
 st.markdown("---")
