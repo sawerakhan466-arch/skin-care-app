@@ -1,13 +1,10 @@
 import base64
 import io
 import json
-import threading
 
 import streamlit as st
 from groq import Groq
 from PIL import Image
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
-import av
 
 
 # =========================================================
